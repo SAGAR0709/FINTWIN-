@@ -1,0 +1,754 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>FinTwin — Your Financial Digital Twin</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet"/>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #0a0e1a;
+    --surface: #111827;
+    --surface2: #1a2235;
+    --border: rgba(255,255,255,0.07);
+    --accent: #00e5a0;
+    --accent2: #4f8eff;
+    --warn: #ff6b6b;
+    --text: #e8edf5;
+    --muted: #6b7a99;
+    --font-head: 'Syne', sans-serif;
+    --font-body: 'DM Sans', sans-serif;
+    --radius: 16px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-body);
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Background grid */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(rgba(0,229,160,0.03) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(0,229,160,0.03) 1px, transparent 1px);
+    background-size: 40px 40px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; padding: 0 20px 60px; }
+
+  /* NAV */
+  nav {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 22px 0 28px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 36px;
+  }
+  .logo {
+    font-family: var(--font-head);
+    font-size: 22px; font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  .logo span { color: var(--accent); }
+  .badge {
+    background: rgba(0,229,160,0.1);
+    border: 1px solid rgba(0,229,160,0.25);
+    color: var(--accent);
+    font-size: 11px; font-weight: 500;
+    padding: 4px 10px; border-radius: 20px;
+    letter-spacing: 0.5px;
+  }
+
+  /* HERO */
+  .hero { text-align: center; padding: 0 0 48px; }
+  .hero h1 {
+    font-family: var(--font-head);
+    font-size: clamp(32px, 5vw, 52px);
+    font-weight: 800; line-height: 1.1;
+    letter-spacing: -1.5px;
+    margin-bottom: 12px;
+  }
+  .hero h1 em { font-style: normal; color: var(--accent); }
+  .hero p { color: var(--muted); font-size: 16px; max-width: 480px; margin: 0 auto; line-height: 1.6; }
+
+  /* TABS */
+  .tabs { display: flex; gap: 4px; background: var(--surface); border-radius: 12px; padding: 4px; margin-bottom: 28px; width: fit-content; }
+  .tab {
+    padding: 9px 20px; border-radius: 9px; border: none;
+    font-family: var(--font-body); font-size: 13px; font-weight: 500;
+    cursor: pointer; transition: all .2s; background: transparent; color: var(--muted);
+  }
+  .tab.active { background: var(--surface2); color: var(--text); box-shadow: 0 1px 3px rgba(0,0,0,0.4); }
+
+  /* MAIN GRID */
+  .grid { display: grid; grid-template-columns: 340px 1fr; gap: 20px; align-items: start; }
+  @media (max-width: 760px) { .grid { grid-template-columns: 1fr; } }
+
+  /* CARDS */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+  }
+  .card-title {
+    font-family: var(--font-head);
+    font-size: 13px; font-weight: 700;
+    letter-spacing: 1px; text-transform: uppercase;
+    color: var(--muted); margin-bottom: 20px;
+  }
+
+  /* FORM */
+  .field { margin-bottom: 16px; }
+  .field label {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 12px; color: var(--muted); margin-bottom: 7px;
+  }
+  .field label span { color: var(--accent); font-weight: 500; font-size: 13px; }
+  input[type=range] {
+    width: 100%; height: 4px; appearance: none;
+    background: var(--surface2); border-radius: 2px; outline: none;
+  }
+  input[type=range]::-webkit-slider-thumb {
+    appearance: none; width: 16px; height: 16px;
+    background: var(--accent); border-radius: 50%;
+    cursor: pointer; box-shadow: 0 0 8px rgba(0,229,160,0.4);
+  }
+  .field-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+  .select-field {
+    background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); font-family: var(--font-body); font-size: 13px;
+    padding: 9px 12px; border-radius: 10px; width: 100%; outline: none;
+  }
+  .select-field:focus { border-color: rgba(0,229,160,0.4); }
+
+  /* STATS ROW */
+  .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+  .stat {
+    background: var(--surface2); border-radius: 12px; padding: 14px 16px;
+    border: 1px solid var(--border);
+  }
+  .stat-label { font-size: 11px; color: var(--muted); margin-bottom: 4px; }
+  .stat-value { font-family: var(--font-head); font-size: 18px; font-weight: 700; }
+  .stat-value.green { color: var(--accent); }
+  .stat-value.red { color: var(--warn); }
+  .stat-value.blue { color: var(--accent2); }
+
+  /* CHART */
+  .chart-wrap { position: relative; height: 260px; margin-bottom: 20px; }
+
+  /* SCENARIO TOGGLE */
+  .scenario-toggle {
+    display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
+  }
+  .scenario-btn {
+    padding: 6px 14px; border-radius: 20px; border: 1px solid var(--border);
+    font-size: 12px; font-weight: 500; cursor: pointer;
+    background: transparent; color: var(--muted); transition: all .2s;
+  }
+  .scenario-btn.active-a { border-color: var(--accent); color: var(--accent); background: rgba(0,229,160,0.08); }
+  .scenario-btn.active-b { border-color: var(--accent2); color: var(--accent2); background: rgba(79,142,255,0.08); }
+
+  /* AI CHAT */
+  .chat-panel { display: flex; flex-direction: column; height: 460px; }
+  .chat-messages { flex: 1; overflow-y: auto; padding: 4px 0; margin-bottom: 16px; display: flex; flex-direction: column; gap: 12px; }
+  .chat-messages::-webkit-scrollbar { width: 4px; }
+  .chat-messages::-webkit-scrollbar-track { background: transparent; }
+  .chat-messages::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .msg { display: flex; gap: 10px; align-items: flex-start; }
+  .msg.user { flex-direction: row-reverse; }
+  .avatar {
+    width: 28px; height: 28px; border-radius: 50%; flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px; font-weight: 700;
+  }
+  .avatar.ai { background: rgba(0,229,160,0.15); color: var(--accent); border: 1px solid rgba(0,229,160,0.3); }
+  .avatar.user { background: rgba(79,142,255,0.15); color: var(--accent2); border: 1px solid rgba(79,142,255,0.3); }
+  .bubble {
+    max-width: 82%; padding: 10px 14px; border-radius: 12px;
+    font-size: 13px; line-height: 1.6;
+  }
+  .bubble.ai { background: var(--surface2); border: 1px solid var(--border); color: var(--text); border-top-left-radius: 4px; }
+  .bubble.user { background: rgba(79,142,255,0.15); border: 1px solid rgba(79,142,255,0.2); color: var(--text); border-top-right-radius: 4px; }
+
+  .typing-indicator { display: flex; gap: 4px; padding: 12px 14px; }
+  .dot { width: 6px; height: 6px; background: var(--muted); border-radius: 50%; animation: bounce .8s infinite; }
+  .dot:nth-child(2) { animation-delay: .15s; }
+  .dot:nth-child(3) { animation-delay: .3s; }
+  @keyframes bounce { 0%,80%,100%{transform:translateY(0)} 40%{transform:translateY(-5px)} }
+
+  .chat-input-row { display: flex; gap: 8px; }
+  .chat-input {
+    flex: 1; background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); font-family: var(--font-body); font-size: 13px;
+    padding: 10px 14px; border-radius: 10px; outline: none; resize: none; height: 42px;
+  }
+  .chat-input:focus { border-color: rgba(0,229,160,0.35); }
+  .send-btn {
+    background: var(--accent); color: #0a0e1a;
+    border: none; border-radius: 10px; width: 42px; height: 42px;
+    cursor: pointer; font-size: 16px; font-weight: 700;
+    display: flex; align-items: center; justify-content: center;
+    transition: all .2s; flex-shrink: 0;
+  }
+  .send-btn:hover { transform: scale(1.05); box-shadow: 0 4px 12px rgba(0,229,160,0.3); }
+  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; transform: none; }
+
+  /* Quick prompts */
+  .quick-prompts { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+  .qp {
+    font-size: 11px; padding: 5px 10px; border-radius: 20px;
+    border: 1px solid var(--border); background: transparent;
+    color: var(--muted); cursor: pointer; transition: all .15s;
+  }
+  .qp:hover { border-color: rgba(0,229,160,0.4); color: var(--accent); }
+
+  /* Panel sections */
+  .section-label {
+    font-size: 11px; color: var(--muted); text-transform: uppercase; letter-spacing: 0.8px;
+    margin-bottom: 12px; font-weight: 600;
+  }
+
+  .run-btn {
+    width: 100%; padding: 12px; border-radius: 12px;
+    background: var(--accent); color: #0a0e1a;
+    border: none; font-family: var(--font-head); font-size: 14px; font-weight: 700;
+    cursor: pointer; transition: all .2s; margin-top: 4px; letter-spacing: 0.3px;
+  }
+  .run-btn:hover { box-shadow: 0 4px 20px rgba(0,229,160,0.35); transform: translateY(-1px); }
+
+  .insight {
+    background: var(--surface2); border-left: 3px solid var(--accent);
+    border-radius: 0 10px 10px 0; padding: 12px 14px;
+    font-size: 12px; line-height: 1.6; color: var(--muted); margin-top: 12px;
+  }
+  .insight strong { color: var(--text); }
+
+  /* Fade in */
+  .fade-in { animation: fadeIn .4s ease forwards; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(8px)} to{opacity:1;transform:none} }
+
+  .api-note {
+    background: rgba(255,107,107,0.07);
+    border: 1px solid rgba(255,107,107,0.2);
+    border-radius: 10px; padding: 10px 14px;
+    font-size: 12px; color: #ff9a9a; margin-bottom: 14px; line-height: 1.5;
+  }
+  .api-key-input {
+    width: 100%; background: var(--surface2); border: 1px solid var(--border);
+    color: var(--text); font-family: var(--font-body); font-size: 12px;
+    padding: 8px 12px; border-radius: 8px; outline: none; margin-bottom: 8px;
+  }
+  .api-key-input:focus { border-color: rgba(0,229,160,0.4); }
+
+  .hidden { display: none; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- NAV -->
+  <nav>
+    <div class="logo">Fin<span>Twin</span></div>
+    <div style="display:flex;gap:10px;align-items:center">
+      <div class="badge">HACKATHON DEMO</div>
+      <div style="font-size:12px;color:var(--muted)">PS4 · Financial Digital Twin</div>
+    </div>
+  </nav>
+
+  <!-- HERO -->
+  <div class="hero">
+    <h1>Simulate your <em>financial future</em><br>before you live it.</h1>
+    <p>Test loan decisions, investment strategies, and spending habits — powered by AI that understands your actual numbers.</p>
+  </div>
+
+  <!-- TABS -->
+  <div class="tabs">
+    <button class="tab active" onclick="showTab('simulator')">📊 Simulator</button>
+    <button class="tab" onclick="showTab('advisor')">🤖 AI Advisor</button>
+    <button class="tab" onclick="showTab('compare')">⚖️ Compare Scenarios</button>
+  </div>
+
+  <!-- ===== SIMULATOR TAB ===== -->
+  <div id="tab-simulator">
+    <div class="grid">
+
+      <!-- LEFT: Controls -->
+      <div>
+        <div class="card">
+          <div class="card-title">Your Profile</div>
+
+          <div class="field">
+            <label>Monthly income <span id="v-income">₹50,000</span></label>
+            <input type="range" min="10000" max="300000" step="5000" value="50000" oninput="update('income',this.value)"/>
+          </div>
+          <div class="field">
+            <label>Current savings <span id="v-savings">₹2,00,000</span></label>
+            <input type="range" min="0" max="2000000" step="10000" value="200000" oninput="update('savings',this.value)"/>
+          </div>
+          <div class="field">
+            <label>Monthly expenses <span id="v-expenses">₹30,000</span></label>
+            <input type="range" min="5000" max="200000" step="2000" value="30000" oninput="update('expenses',this.value)"/>
+          </div>
+
+          <div class="card-title" style="margin-top:20px">Loan Decision</div>
+          <div class="field">
+            <label>Loan amount <span id="v-loan">₹10,00,000</span></label>
+            <input type="range" min="0" max="10000000" step="50000" value="1000000" oninput="update('loan',this.value)"/>
+          </div>
+          <div class="field">
+            <label>Interest rate <span id="v-rate">8.5%</span></label>
+            <input type="range" min="5" max="20" step="0.5" value="8.5" oninput="update('rate',this.value)"/>
+          </div>
+          <div class="field-row">
+            <div class="field" style="margin:0">
+              <label style="margin-bottom:6px">Loan tenure</label>
+              <select class="select-field" onchange="update('tenure',this.value)">
+                <option value="60">5 years</option>
+                <option value="120" selected>10 years</option>
+                <option value="180">15 years</option>
+                <option value="240">20 years</option>
+              </select>
+            </div>
+            <div class="field" style="margin:0">
+              <label style="margin-bottom:6px">Investment type</label>
+              <select class="select-field" onchange="update('invest',this.value)">
+                <option value="0.08">Savings (8%)</option>
+                <option value="0.12" selected>Mutual fund (12%)</option>
+                <option value="0.15">Equity (15%)</option>
+                <option value="0.18">Aggressive (18%)</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>Monthly SIP investment <span id="v-sip">₹5,000</span></label>
+            <input type="range" min="0" max="50000" step="1000" value="5000" oninput="update('sip',this.value)"/>
+          </div>
+
+          <button class="run-btn" onclick="runSimulation()">▶ Run Simulation</button>
+        </div>
+      </div>
+
+      <!-- RIGHT: Output -->
+      <div>
+        <div class="stats-row" id="stats-row">
+          <div class="stat">
+            <div class="stat-label">Monthly EMI</div>
+            <div class="stat-value red" id="stat-emi">₹12,399</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Net worth @ 10yr</div>
+            <div class="stat-value green" id="stat-nw">₹14.2L</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Investment corpus</div>
+            <div class="stat-value blue" id="stat-corpus">₹11.6L</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title">Net worth projection — 10 years</div>
+          <div class="chart-wrap">
+            <canvas id="mainChart"></canvas>
+          </div>
+          <div class="insight" id="main-insight">
+            <strong>Insight:</strong> With your current loan and SIP, your net worth grows steadily after year 3. The EMI reduces monthly surplus but your investments compound over time.
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== AI ADVISOR TAB ===== -->
+  <div id="tab-advisor" class="hidden">
+    <div class="grid" style="grid-template-columns: 1fr 380px;">
+
+      <div class="card" style="padding:20px">
+        <div class="card-title">AI Financial Advisor</div>
+
+        <div class="api-note">
+          🔑 Enter your Anthropic API key below to activate the real AI advisor. Get one free at <strong>console.anthropic.com</strong>
+        </div>
+        <input class="api-key-input" type="password" id="api-key" placeholder="sk-ant-..." oninput="saveKey(this.value)"/>
+
+        <div class="chat-panel">
+          <div class="chat-messages" id="chat-messages">
+            <div class="msg">
+              <div class="avatar ai">FT</div>
+              <div class="bubble ai">Hi! I'm your FinTwin AI advisor. I can see your financial profile and simulation results. Ask me anything about your loan decision, investment strategy, or how to improve your financial future. 🌱</div>
+            </div>
+          </div>
+
+          <div class="section-label">Quick questions</div>
+          <div class="quick-prompts">
+            <button class="qp" onclick="sendQuick('Is my loan a good idea given my income?')">Is my loan a good idea?</button>
+            <button class="qp" onclick="sendQuick('How much should I invest monthly?')">How much to invest?</button>
+            <button class="qp" onclick="sendQuick('When can I be debt-free?')">When am I debt-free?</button>
+            <button class="qp" onclick="sendQuick('What are the risks in my current plan?')">Risks in my plan?</button>
+          </div>
+
+          <div class="chat-input-row">
+            <textarea class="chat-input" id="chat-input" placeholder="Ask about your finances..." onkeydown="if(event.key==='Enter'&&!event.shiftKey){event.preventDefault();sendMessage()}"></textarea>
+            <button class="send-btn" id="send-btn" onclick="sendMessage()">↑</button>
+          </div>
+        </div>
+      </div>
+
+      <div>
+        <div class="card" style="margin-bottom:16px">
+          <div class="card-title">Your live profile</div>
+          <div id="profile-summary" style="font-size:13px;line-height:2;color:var(--muted)">
+          </div>
+        </div>
+        <div class="card">
+          <div class="card-title">Simulation snapshot</div>
+          <div style="font-size:12px;color:var(--muted);line-height:1.9" id="sim-summary"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ===== COMPARE TAB ===== -->
+  <div id="tab-compare" class="hidden">
+    <div class="grid">
+      <div class="card">
+        <div class="card-title">Scenario A — With loan</div>
+        <div class="field">
+          <label>Loan amount <span id="ca-loan-v">₹10,00,000</span></label>
+          <input type="range" min="0" max="10000000" step="50000" value="1000000" oninput="updateCompare('a','loan',this.value)"/>
+        </div>
+        <div class="field">
+          <label>Monthly SIP <span id="ca-sip-v">₹5,000</span></label>
+          <input type="range" min="0" max="40000" step="1000" value="5000" oninput="updateCompare('a','sip',this.value)"/>
+        </div>
+        <div class="field">
+          <label>Rate <span id="ca-rate-v">8.5%</span></label>
+          <input type="range" min="5" max="20" step="0.5" value="8.5" oninput="updateCompare('a','rate',this.value)"/>
+        </div>
+
+        <div class="card-title" style="margin-top:20px">Scenario B — No loan</div>
+        <div class="field">
+          <label>Monthly SIP (invest instead) <span id="cb-sip-v">₹15,000</span></label>
+          <input type="range" min="0" max="50000" step="1000" value="15000" oninput="updateCompare('b','sip',this.value)"/>
+        </div>
+        <div class="field">
+          <label>Extra savings redirected <span id="cb-save-v">₹5,000</span></label>
+          <input type="range" min="0" max="30000" step="1000" value="5000" oninput="updateCompare('b','save',this.value)"/>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">Scenario comparison — 10 years</div>
+        <div class="chart-wrap"><canvas id="compareChart"></canvas></div>
+
+        <div class="stats-row" style="margin-top:16px">
+          <div class="stat">
+            <div class="stat-label">Scenario A @ 10yr</div>
+            <div class="stat-value green" id="cmp-a">—</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Scenario B @ 10yr</div>
+            <div class="stat-value blue" id="cmp-b">—</div>
+          </div>
+          <div class="stat">
+            <div class="stat-label">Difference</div>
+            <div class="stat-value" id="cmp-diff">—</div>
+          </div>
+        </div>
+        <div class="insight" id="compare-insight"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+// ─── STATE ───────────────────────────────────────────────────────────────────
+const state = {
+  income: 50000, savings: 200000, expenses: 30000,
+  loan: 1000000, rate: 8.5, tenure: 120, sip: 5000, invest: 0.12
+};
+const compare = {
+  a: { loan: 1000000, sip: 5000, rate: 8.5 },
+  b: { sip: 15000, save: 5000 }
+};
+
+let mainChart, compareChart;
+let apiKey = '';
+
+function saveKey(v) { apiKey = v; }
+
+// ─── HELPERS ─────────────────────────────────────────────────────────────────
+function fmt(n) {
+  if(n >= 10000000) return '₹' + (n/10000000).toFixed(1) + 'Cr';
+  if(n >= 100000) return '₹' + (n/100000).toFixed(1) + 'L';
+  return '₹' + n.toLocaleString('en-IN');
+}
+function calcEMI(P, r, n) {
+  if(P === 0) return 0;
+  const mr = r / 1200;
+  return P * mr * Math.pow(1+mr, n) / (Math.pow(1+mr, n) - 1);
+}
+
+// ─── UPDATE SLIDERS ───────────────────────────────────────────────────────────
+function update(key, val) {
+  val = parseFloat(val);
+  state[key] = val;
+  const labels = { income:'v-income', savings:'v-savings', expenses:'v-expenses', loan:'v-loan', sip:'v-sip' };
+  if(key === 'rate') document.getElementById('v-rate').textContent = val + '%';
+  else if(labels[key]) document.getElementById(labels[key]).textContent = fmt(val);
+  runSimulation();
+}
+
+// ─── SIMULATE ─────────────────────────────────────────────────────────────────
+function simulate(s) {
+  const months = 120;
+  const emi = calcEMI(s.loan, s.rate, s.tenure);
+  const monthlyReturn = (s.invest || 0.12) / 12;
+  let nw = [], invest = [], debt = [], loanBal = s.loan || 0;
+  let corpus = 0;
+  for(let m = 0; m < months; m++) {
+    const surplus = s.income - s.expenses - emi;
+    corpus = corpus * (1 + monthlyReturn) + (s.sip || 0);
+    if(loanBal > 0) loanBal = Math.max(0, loanBal - (emi - loanBal * (s.rate/1200)));
+    const netWorth = (s.savings || 0) + corpus - loanBal;
+    nw.push(netWorth);
+    invest.push(corpus);
+    debt.push(loanBal);
+  }
+  return { nw, invest, debt, emi, finalNW: nw[119], finalCorpus: invest[119] };
+}
+
+function runSimulation() {
+  const r = simulate(state);
+  // Stats
+  document.getElementById('stat-emi').textContent = fmt(Math.round(r.emi));
+  document.getElementById('stat-nw').textContent = fmt(Math.round(r.finalNW));
+  document.getElementById('stat-corpus').textContent = fmt(Math.round(r.finalCorpus));
+
+  const labels = Array.from({length:120}, (_,i) => i%12===0 ? `Y${i/12+1}` : '');
+  const ds = [
+    { label:'Net worth', data: r.nw, borderColor:'#00e5a0', backgroundColor:'rgba(0,229,160,0.07)', tension:0.4, fill:true, pointRadius:0 },
+    { label:'Investment', data: r.invest, borderColor:'#4f8eff', backgroundColor:'rgba(79,142,255,0.05)', tension:0.4, fill:true, pointRadius:0 },
+    { label:'Loan balance', data: r.debt, borderColor:'#ff6b6b', backgroundColor:'rgba(255,107,107,0.05)', tension:0.4, fill:true, pointRadius:0 }
+  ];
+
+  if(!mainChart) {
+    mainChart = new Chart(document.getElementById('mainChart'), {
+      type:'line', data: { labels, datasets: ds },
+      options: chartOpts()
+    });
+  } else {
+    mainChart.data.labels = labels;
+    mainChart.data.datasets = ds;
+    mainChart.update('none');
+  }
+
+  // Insight
+  const surplus = state.income - state.expenses - r.emi;
+  let ins = '';
+  if(surplus < 5000) ins = `⚠️ Your monthly surplus after EMI is only <strong>${fmt(Math.round(surplus))}</strong> — quite tight. Consider reducing loan amount or increasing income.`;
+  else if(r.finalNW > 2000000) ins = `✅ Strong outlook! Net worth of <strong>${fmt(Math.round(r.finalNW))}</strong> in 10 years. Your SIP investments are doing heavy lifting.`;
+  else ins = `📈 Net worth of <strong>${fmt(Math.round(r.finalNW))}</strong> in 10 years. Increasing SIP by ₹2,000/month could add ₹3–5L more.`;
+  document.getElementById('main-insight').innerHTML = ins;
+  updateSummaries(r);
+}
+
+// ─── COMPARE ──────────────────────────────────────────────────────────────────
+function updateCompare(sc, key, val) {
+  val = parseFloat(val);
+  compare[sc][key] = val;
+  const ids = { a: { loan:'ca-loan-v', sip:'ca-sip-v', rate:'ca-rate-v' }, b: { sip:'cb-sip-v', save:'cb-save-v' } };
+  const el = ids[sc][key];
+  if(el) document.getElementById(el).textContent = key==='rate' ? val+'%' : fmt(val);
+  runCompare();
+}
+
+function runCompare() {
+  const rA = simulate({ ...state, loan: compare.a.loan, sip: compare.a.sip, rate: compare.a.rate });
+  const rB = simulate({ ...state, loan: 0, sip: compare.b.sip, expenses: state.expenses - compare.b.save });
+
+  const labels = Array.from({length:120}, (_,i) => i%12===0 ? `Y${i/12+1}` : '');
+  const ds = [
+    { label:'Scenario A (loan)', data: rA.nw, borderColor:'#00e5a0', tension:0.4, fill:false, pointRadius:0 },
+    { label:'Scenario B (no loan)', data: rB.nw, borderColor:'#4f8eff', tension:0.4, fill:false, pointRadius:0 }
+  ];
+
+  if(!compareChart) {
+    compareChart = new Chart(document.getElementById('compareChart'), {
+      type:'line', data:{ labels, datasets:ds }, options: chartOpts()
+    });
+  } else {
+    compareChart.data.labels = labels;
+    compareChart.data.datasets = ds;
+    compareChart.update('none');
+  }
+
+  document.getElementById('cmp-a').textContent = fmt(Math.round(rA.finalNW));
+  document.getElementById('cmp-b').textContent = fmt(Math.round(rB.finalNW));
+  const diff = rB.finalNW - rA.finalNW;
+  const el = document.getElementById('cmp-diff');
+  el.textContent = (diff >= 0 ? '+' : '') + fmt(Math.round(diff));
+  el.className = 'stat-value ' + (diff >= 0 ? 'blue' : 'green');
+
+  const winner = diff >= 0 ? 'B (no loan)' : 'A (with loan)';
+  document.getElementById('compare-insight').innerHTML =
+    `<strong>Scenario ${winner}</strong> leads by <strong>${fmt(Math.abs(Math.round(diff)))}</strong> over 10 years. ${diff >= 0 ? 'Avoiding the loan and investing the difference yields better long-term wealth.' : 'The asset acquired via the loan justifies the interest cost in your case.'}`;
+}
+
+// ─── CHART OPTIONS ────────────────────────────────────────────────────────────
+function chartOpts() {
+  return {
+    responsive: true, maintainAspectRatio: false,
+    interaction: { mode:'index', intersect:false },
+    plugins: {
+      legend: { display:true, labels:{ color:'#6b7a99', font:{size:11,family:'DM Sans'}, boxWidth:12, padding:16 } },
+      tooltip: {
+        backgroundColor:'#111827', borderColor:'rgba(255,255,255,0.08)', borderWidth:1,
+        titleColor:'#e8edf5', bodyColor:'#6b7a99', padding:10,
+        callbacks: { label: ctx => ' ' + ctx.dataset.label + ': ' + fmt(Math.round(ctx.raw)) }
+      }
+    },
+    scales: {
+      x: { ticks:{ color:'#6b7a99', font:{size:10}, maxTicksLimit:11 }, grid:{ color:'rgba(255,255,255,0.04)' }, border:{color:'transparent'} },
+      y: { ticks:{ color:'#6b7a99', font:{size:10}, callback: v => fmt(v) }, grid:{ color:'rgba(255,255,255,0.04)' }, border:{color:'transparent'} }
+    }
+  };
+}
+
+// ─── SUMMARIES ────────────────────────────────────────────────────────────────
+function updateSummaries(r) {
+  document.getElementById('profile-summary').innerHTML = `
+    <div>💰 Income: <strong style="color:var(--text)">${fmt(state.income)}/mo</strong></div>
+    <div>🏦 Savings: <strong style="color:var(--text)">${fmt(state.savings)}</strong></div>
+    <div>🧾 Expenses: <strong style="color:var(--text)">${fmt(state.expenses)}/mo</strong></div>
+    <div>🏠 Loan: <strong style="color:var(--text)">${fmt(state.loan)}</strong></div>
+    <div>📈 SIP: <strong style="color:var(--text)">${fmt(state.sip)}/mo</strong></div>
+    <div>💳 EMI: <strong style="color:var(--warn)">${fmt(Math.round(r.emi))}/mo</strong></div>
+  `;
+  document.getElementById('sim-summary').innerHTML = `
+    <div>Net worth in 5 years: <strong style="color:var(--accent)">${fmt(Math.round(r.nw[59]))}</strong></div>
+    <div>Net worth in 10 years: <strong style="color:var(--accent)">${fmt(Math.round(r.finalNW))}</strong></div>
+    <div>Investment corpus: <strong style="color:var(--accent2)">${fmt(Math.round(r.finalCorpus))}</strong></div>
+    <div>Loan clears in: <strong style="color:var(--text)">${state.tenure/12} years</strong></div>
+    <div>Monthly surplus: <strong style="color:${state.income-state.expenses-r.emi>5000?'var(--accent)':'var(--warn)'}">
+      ${fmt(Math.round(state.income - state.expenses - r.emi))}</strong></div>
+  `;
+}
+
+// ─── TABS ─────────────────────────────────────────────────────────────────────
+function showTab(name) {
+  ['simulator','advisor','compare'].forEach(t => {
+    document.getElementById('tab-'+t).classList.toggle('hidden', t !== name);
+  });
+  document.querySelectorAll('.tab').forEach((el,i) => {
+    el.classList.toggle('active', ['simulator','advisor','compare'][i] === name);
+  });
+  if(name==='compare') { setTimeout(runCompare, 50); }
+}
+
+// ─── AI CHAT ──────────────────────────────────────────────────────────────────
+function buildContext() {
+  const r = simulate(state);
+  return `You are FinTwin, a friendly AI financial advisor in a hackathon demo app.
+The user's current financial profile:
+- Monthly income: ₹${state.income.toLocaleString()}
+- Current savings: ₹${state.savings.toLocaleString()}
+- Monthly expenses: ₹${state.expenses.toLocaleString()}
+- Loan amount: ₹${state.loan.toLocaleString()} at ${state.rate}% for ${state.tenure/12} years
+- Monthly EMI: ₹${Math.round(r.emi).toLocaleString()}
+- Monthly SIP investment: ₹${state.sip.toLocaleString()}
+- Monthly surplus after EMI+expenses: ₹${Math.round(state.income-state.expenses-r.emi).toLocaleString()}
+Simulation results (10 years):
+- Projected net worth: ₹${Math.round(r.finalNW).toLocaleString()}
+- Investment corpus: ₹${Math.round(r.finalCorpus).toLocaleString()}
+Give specific, personalized advice using THEIR actual numbers. Be concise (2-4 sentences). Use ₹ signs. Be encouraging but honest.`;
+}
+
+async function sendMessage() {
+  const input = document.getElementById('chat-input');
+  const msg = input.value.trim();
+  if(!msg) return;
+  input.value = '';
+  addMsg(msg, 'user');
+  await getAIResponse(msg);
+}
+function sendQuick(q) { document.getElementById('chat-input').value = q; sendMessage(); }
+
+function addMsg(text, who) {
+  const container = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg fade-in ' + who;
+  div.innerHTML = `<div class="avatar ${who}">${who==='ai'?'FT':'You'}</div><div class="bubble ${who}">${text}</div>`;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+}
+
+function showTyping() {
+  const container = document.getElementById('chat-messages');
+  const div = document.createElement('div');
+  div.className = 'msg'; div.id = 'typing';
+  div.innerHTML = `<div class="avatar ai">FT</div><div class="bubble ai"><div class="typing-indicator"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div></div>`;
+  container.appendChild(div);
+  container.scrollTop = container.scrollHeight;
+  return div;
+}
+
+async function getAIResponse(userMsg) {
+  document.getElementById('send-btn').disabled = true;
+  const typing = showTyping();
+
+  if(!apiKey) {
+    setTimeout(() => {
+      typing.remove();
+      const demos = {
+        'Is my loan a good idea given my income?': `Based on your income of ${fmt(state.income)}/mo and EMI of ${fmt(Math.round(calcEMI(state.loan,state.rate,state.tenure)))}, your debt-to-income ratio is ${Math.round(calcEMI(state.loan,state.rate,state.tenure)/state.income*100)}%. Financial advisors recommend keeping this below 40%. ${calcEMI(state.loan,state.rate,state.tenure)/state.income < 0.4 ? "You're within a safe range! ✅" : "Consider a smaller loan or longer tenure. ⚠️"}`,
+        'How much should I invest monthly?': `With a monthly surplus of ${fmt(Math.round(state.income-state.expenses-calcEMI(state.loan,state.rate,state.tenure)))}, I'd recommend investing at least 20% of it — about ${fmt(Math.round((state.income-state.expenses-calcEMI(state.loan,state.rate,state.tenure))*0.2))} more per month on top of your SIP. Small increases compound significantly over 10 years!`,
+        'When can I be debt-free?': `Your loan of ${fmt(state.loan)} at ${state.rate}% closes in ${state.tenure/12} years — that's ${new Date().getFullYear() + state.tenure/12}. After that, your monthly cash flow improves by ${fmt(Math.round(calcEMI(state.loan,state.rate,state.tenure)))} — redirect that into investments!`,
+        'What are the risks in my current plan?': `Key risks I see: (1) Your surplus is ${fmt(Math.round(state.income-state.expenses-calcEMI(state.loan,state.rate,state.tenure)))}/mo — any income disruption is risky without an emergency fund of 6 months expenses. (2) Market returns aren't guaranteed — I'm projecting ${(state.invest*100).toFixed(0)}% but real returns vary. Build a buffer! 🛡️`
+      };
+      const response = demos[userMsg] || `Based on your profile — ${fmt(state.income)}/mo income, ${fmt(state.savings)} savings, and a ${fmt(state.loan)} loan — your projected net worth in 10 years is ${fmt(Math.round(simulate(state).finalNW))}. Add your Anthropic API key above for personalized AI-powered advice!`;
+      addMsg(response, 'ai');
+      document.getElementById('send-btn').disabled = false;
+    }, 1200);
+    return;
+  }
+
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{ 'Content-Type':'application/json', 'x-api-key': apiKey, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514', max_tokens:300,
+        system: buildContext(),
+        messages:[{ role:'user', content: userMsg }]
+      })
+    });
+    const data = await res.json();
+    typing.remove();
+    const text = data.content?.[0]?.text || 'Sorry, could not get a response. Check your API key.';
+    addMsg(text, 'ai');
+  } catch(e) {
+    typing.remove();
+    addMsg('Connection error. Make sure your API key is correct and try again.', 'ai');
+  }
+  document.getElementById('send-btn').disabled = false;
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────────────
+runSimulation();
+</script>
+</body>
+</html>
